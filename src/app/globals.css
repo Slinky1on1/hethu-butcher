@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-hethu-red: #c41e3a;
+  --color-hethu-red-dark: #9a1830;
+  --color-hethu-cream: #fff8f0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--color-hethu-cream);
+}

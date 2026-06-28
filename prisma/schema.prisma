@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  name       String
+  packSize   String   @default("")
+  price      Int
+  imageUrl   String?
+  visible    Boolean  @default(true)
+  trackStock Boolean  @default(false)
+  stock      Int      @default(0)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  consignmentLines ConsignmentLine[]
+  saleLines        SaleLine[]
+  orderLines       OrderLine[]
+}
+
+model Shop {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String   @default("")
+  phone     String   @default("")
+  area      String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  consignmentDrops ConsignmentDrop[]
+  sales            Sale[]
+}
+
+model ConsignmentDrop {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  lines ConsignmentLine[]
+}
+
+model ConsignmentLine {
+  id                String          @id @default(cuid())
+  consignmentDropId String
+  consignmentDrop   ConsignmentDrop @relation(fields: [consignmentDropId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Int
+}
+
+model Sale {
+  id            String   @id @default(cuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  total         Int
+  paymentMethod String   @default("cash")
+  paid          Boolean  @default(true)
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+
+  lines SaleLine[]
+}
+
+model SaleLine {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int
+}
+
+model Order {
+  id                   String    @id @default(cuid())
+  customerName         String
+  customerPhone        String
+  area                 String
+  note                 String    @default("")
+  paymentMethod        String    @default("cash")
+  total                Int
+  status               String    @default("pending")
+  isConsignment        Boolean   @default(false)
+  consignmentStartedAt DateTime?
+  paid                 Boolean   @default(false)
+  paidAt               DateTime?
+  lastReminderAt       DateTime?
+  createdAt            DateTime  @default(now())
+
+  lines OrderLine[]
+}
+
+model OrderLine {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int
+}
