@@ -4,6 +4,7 @@ import { getBusinessDashboard } from "@/lib/dashboard";
 import { PageHeader, formatPrice } from "@/components/ui";
 import { requireBusinessBySlug, toBusinessConfig } from "@/lib/tenant";
 import { tenantAdminPath } from "@/lib/paths";
+import { sendBusinessHeartbeat } from "@/lib/hub-heartbeat";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export default async function AdminDashboard({
 }) {
   const { slug } = await params;
   const session = await requireOwner(slug);
+  void sendBusinessHeartbeat(session.businessId!).catch(() => {});
   const business = await requireBusinessBySlug(slug);
   const config = toBusinessConfig(business);
   const d = await getBusinessDashboard(session.businessId!, slug);
