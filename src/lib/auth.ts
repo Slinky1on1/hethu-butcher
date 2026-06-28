@@ -10,7 +10,7 @@ export async function getSession() {
   return getIronSession<SessionData>(cookieStore, sessionOptions);
 }
 
-export async function requireOwner(businessSlug: string) {
+export async function requireOwner(businessSlug: string, opts?: { allowBillingLock?: boolean }) {
   const session = await getSession();
   if (!session.isLoggedIn || session.businessSlug !== businessSlug) {
     redirect(`/b/${businessSlug}/admin/login`);
@@ -18,6 +18,20 @@ export async function requireOwner(businessSlug: string) {
   if (!session.businessId) {
     redirect(`/b/${businessSlug}/admin/login`);
   }
+
+  if (!opts?.allowBillingLock) {
+    const business = await prisma.business.findUnique({
+      where: { id: session.businessId },
+      select: { billingLocked: true, onboardingStep: true },
+    });
+    if (business?.onboardingStep && business.onboardingStep > 0) {
+      redirect(`/onboarding/${businessSlug}?step=${business.onboardingStep}`);
+    }
+    if (business?.billingLocked) {
+      redirect(`/b/${businessSlug}/admin/locked`);
+    }
+  }
+
   return session;
 }
 

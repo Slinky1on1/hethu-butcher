@@ -23,6 +23,13 @@ model Business {
   ownerPinHash String
   logoUrl   String?
   active    Boolean  @default(true)
+  email     String?
+  hubInstanceId String? @unique
+  planId    String   @default("connect_trial")
+  trialEndsAt DateTime?
+  onboardingStep Int @default(0)
+  billingLocked Boolean @default(false)
+  billingMessage String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
