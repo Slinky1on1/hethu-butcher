@@ -42,22 +42,22 @@ export async function getShopBalances(shopId: string) {
   return Array.from(balanceMap.values()).filter((b) => b.quantity > 0);
 }
 
-export async function getUnpaidSalesTotal() {
+export async function getUnpaidSalesTotal(businessId: string) {
   const sales = await prisma.sale.findMany({
-    where: { paid: false },
+    where: { paid: false, shop: { businessId } },
     include: { shop: true },
   });
   return sales;
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(businessId: string) {
   const [pendingOrders, unpaidSales, shopCount] = await Promise.all([
-    prisma.order.count({ where: { status: "pending" } }),
+    prisma.order.count({ where: { businessId, status: "pending" } }),
     prisma.sale.aggregate({
-      where: { paid: false },
+      where: { paid: false, shop: { businessId } },
       _sum: { total: true },
     }),
-    prisma.shop.count(),
+    prisma.shop.count({ where: { businessId } }),
   ]);
 
   return {

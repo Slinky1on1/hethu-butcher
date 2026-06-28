@@ -25,10 +25,10 @@ function validateImage(file: File) {
   }
 }
 
-async function saveToSupabase(file: File): Promise<string> {
+async function saveToSupabase(file: File, businessId: string): Promise<string> {
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || "product-images";
   const ext = extensionForMime(file.type);
-  const filename = `products/${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
+  const filename = `products/${businessId}/${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
   const bytes = await file.arrayBuffer();
 
   const supabase = getSupabaseAdmin();
@@ -45,23 +45,23 @@ async function saveToSupabase(file: File): Promise<string> {
   return data.publicUrl;
 }
 
-async function saveToLocalDisk(file: File): Promise<string> {
+async function saveToLocalDisk(file: File, businessId: string): Promise<string> {
   const ext = extensionForMime(file.type);
   const filename = `${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "products", businessId);
   await mkdir(uploadDir, { recursive: true });
 
   const bytes = await file.arrayBuffer();
   await writeFile(path.join(uploadDir, filename), Buffer.from(bytes));
 
-  return `/uploads/products/${filename}`;
+  return `/uploads/products/${businessId}/${filename}`;
 }
 
-export async function saveProductImage(file: File): Promise<string> {
+export async function saveProductImage(file: File, businessId: string): Promise<string> {
   validateImage(file);
 
   if (isSupabaseStorageConfigured()) {
-    return saveToSupabase(file);
+    return saveToSupabase(file, businessId);
   }
 
   if (process.env.NODE_ENV === "production") {
@@ -70,5 +70,5 @@ export async function saveProductImage(file: File): Promise<string> {
     );
   }
 
-  return saveToLocalDisk(file);
+  return saveToLocalDisk(file, businessId);
 }

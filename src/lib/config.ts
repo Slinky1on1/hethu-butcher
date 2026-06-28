@@ -2,10 +2,14 @@ import { SessionOptions } from "iron-session";
 
 export interface SessionData {
   isLoggedIn: boolean;
+  businessId?: string;
+  businessSlug?: string;
 }
 
 export const defaultSession: SessionData = {
   isLoggedIn: false,
+  businessId: undefined,
+  businessSlug: undefined,
 };
 
 export const sessionOptions: SessionOptions = {

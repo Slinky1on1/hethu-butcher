@@ -1,8 +1,8 @@
 {
-  "name": "Hethu Mobile Butcher",
-  "short_name": "Hethu",
-  "description": "Fresh quality meat — bulk packs, great prices",
-  "start_url": "/admin",
+  "name": "Nexvintrix Connect",
+  "short_name": "Connect",
+  "description": "Order pages and owner tools for local businesses",
+  "start_url": "/b/hethu/admin",
   "display": "standalone",
   "background_color": "#fff8f0",
   "theme_color": "#c41e3a",

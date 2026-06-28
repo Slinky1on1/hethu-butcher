@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hashOwnerPin } from "../src/lib/pin";
 
 const products = [
   { name: "Beef Meaty Bones", packSize: "5kg", price: 25000, sortOrder: 1 },
@@ -20,17 +21,40 @@ const products = [
 const prisma = new PrismaClient();
 
 async function main() {
-  const count = await prisma.product.count();
-  if (count > 0) {
-    console.log("Database already seeded, skipping.");
-    return;
+  const existingBusiness = await prisma.business.findUnique({ where: { slug: "hethu" } });
+  if (existingBusiness) {
+    const count = await prisma.product.count({ where: { businessId: existingBusiness.id } });
+    if (count > 0) {
+      console.log("Database already seeded, skipping.");
+      return;
+    }
   }
+
+  const business =
+    existingBusiness ??
+    (await prisma.business.create({
+      data: {
+        id: "biz_hethu",
+        slug: "hethu",
+        name: "Hethu Mobile Butcher",
+        industry: "butcher",
+        phone: "0746410088",
+        whatsapp: "27746410088",
+        bankName: "Capitec",
+        bankAccountName: "MR HT NGWANE",
+        bankAccountNumber: "2480495678",
+        bankBranch: "470010",
+        ownerPinHash: await hashOwnerPin("1234"),
+      },
+    }));
 
   for (const product of products) {
-    await prisma.product.create({ data: product });
+    await prisma.product.create({
+      data: { ...product, businessId: business.id },
+    });
   }
 
-  console.log(`Seeded ${products.length} products.`);
+  console.log(`Seeded ${products.length} products for ${business.name}.`);
 }
 
 main()

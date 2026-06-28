@@ -1,5 +1,3 @@
-import { businessConfig } from "./config";
-
 export function formatPhoneForWhatsApp(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("27")) return digits;
@@ -8,12 +6,13 @@ export function formatPhoneForWhatsApp(phone: string): string {
 }
 
 export function buildPaymentReminderMessage(opts: {
+  businessName: string;
   customerName: string;
   totalFormatted: string;
   daysOnConsignment: number;
 }): string {
   return (
-    `Hi ${opts.customerName}, this is ${businessConfig.name}. ` +
+    `Hi ${opts.customerName}, this is ${opts.businessName}. ` +
     `Friendly reminder: your order of ${opts.totalFormatted} has been on consignment for ${opts.daysOnConsignment} day${opts.daysOnConsignment !== 1 ? "s" : ""}. ` +
     `Please arrange payment when you can. Thank you!`
   );

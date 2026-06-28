@@ -1,8 +1,9 @@
 import { prisma } from "./prisma";
 
-export async function getConsignmentOrdersOwing() {
+export async function getConsignmentOrdersOwing(businessId: string) {
   return prisma.order.findMany({
     where: {
+      businessId,
       isConsignment: true,
       paid: false,
       status: { not: "cancelled" },
@@ -12,9 +13,10 @@ export async function getConsignmentOrdersOwing() {
   });
 }
 
-export async function getConsignmentOrdersOwingTotal() {
+export async function getConsignmentOrdersOwingTotal(businessId: string) {
   const result = await prisma.order.aggregate({
     where: {
+      businessId,
       isConsignment: true,
       paid: false,
       status: { not: "cancelled" },

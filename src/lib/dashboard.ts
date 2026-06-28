@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { getConsignmentOrdersOwingTotal } from "./consignment-orders";
 import { getUnpaidSalesTotal } from "./balances";
+import { tenantAdminPath } from "./paths";
 
 function daysAgo(n: number) {
   const d = new Date();
@@ -42,7 +43,10 @@ export type BusinessDashboard = {
   topProducts: { name: string; quantity: number }[];
 };
 
-export async function getBusinessDashboard(): Promise<BusinessDashboard> {
+export async function getBusinessDashboard(
+  businessId: string,
+  slug: string
+): Promise<BusinessDashboard> {
   const today = startOfToday();
   const weekAgo = daysAgo(7);
 
@@ -66,14 +70,17 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
     consignmentLines,
     saleLinesAll,
   ] = await Promise.all([
-    prisma.order.count({ where: { status: "pending" } }),
-    prisma.shop.count(),
-    prisma.product.count({ where: { visible: true } }),
-    prisma.product.findMany({ where: { trackStock: true, stock: { lte: 5 } } }),
-    getConsignmentOrdersOwingTotal(),
-    getUnpaidSalesTotal(),
+    prisma.order.count({ where: { businessId, status: "pending" } }),
+    prisma.shop.count({ where: { businessId } }),
+    prisma.product.count({ where: { businessId, visible: true } }),
+    prisma.product.findMany({
+      where: { businessId, trackStock: true, stock: { lte: 5 } },
+    }),
+    getConsignmentOrdersOwingTotal(businessId),
+    getUnpaidSalesTotal(businessId),
     prisma.order.findMany({
       where: {
+        businessId,
         paid: true,
         paidAt: { gte: weekAgo },
         status: { not: "cancelled" },
@@ -81,41 +88,54 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
     }),
     prisma.order.findMany({
       where: {
+        businessId,
         paid: true,
         paidAt: { gte: today },
         status: { not: "cancelled" },
       },
     }),
     prisma.order.count({
-      where: { createdAt: { gte: weekAgo }, status: { not: "cancelled" } },
+      where: { businessId, createdAt: { gte: weekAgo }, status: { not: "cancelled" } },
     }),
-    prisma.sale.findMany({ where: { paid: true, createdAt: { gte: weekAgo } } }),
-    prisma.sale.findMany({ where: { paid: true, createdAt: { gte: today } } }),
+    prisma.sale.findMany({
+      where: { paid: true, createdAt: { gte: weekAgo }, shop: { businessId } },
+    }),
+    prisma.sale.findMany({
+      where: { paid: true, createdAt: { gte: today }, shop: { businessId } },
+    }),
     prisma.order.findMany({
+      where: { businessId },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { lines: true },
     }),
     prisma.sale.findMany({
+      where: { shop: { businessId } },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { shop: true },
     }),
     prisma.consignmentDrop.findMany({
+      where: { businessId },
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { shop: true, lines: true },
     }),
     prisma.orderLine.findMany({
-      where: { order: { createdAt: { gte: weekAgo }, paid: true } },
+      where: { order: { businessId, createdAt: { gte: weekAgo }, paid: true } },
       include: { product: true },
     }),
     prisma.saleLine.findMany({
-      where: { sale: { createdAt: { gte: weekAgo }, paid: true } },
+      where: { sale: { createdAt: { gte: weekAgo }, paid: true, shop: { businessId } } },
       include: { product: true },
     }),
-    prisma.consignmentLine.findMany({ include: { product: true } }),
-    prisma.saleLine.findMany(),
+    prisma.consignmentLine.findMany({
+      where: { consignmentDrop: { businessId } },
+      include: { product: true },
+    }),
+    prisma.saleLine.findMany({
+      where: { sale: { shop: { businessId } } },
+    }),
   ]);
 
   const shopOwedTotal = unpaidShopSales.reduce((s, x) => s + x.total, 0);
@@ -165,7 +185,7 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
       subtitle: o.status === "pending" ? "New order" : o.isConsignment ? "Consignment order" : "Order",
       amount: o.total,
       date: o.createdAt,
-      href: "/admin/orders",
+      href: tenantAdminPath(slug, "orders"),
     })),
     ...recentSales.map((s) => ({
       id: s.id,
@@ -174,7 +194,7 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
       subtitle: s.paid ? "Sale recorded" : "Sale — unpaid",
       amount: s.total,
       date: s.createdAt,
-      href: s.paid ? "/admin/sales" : "/admin/owing",
+      href: s.paid ? tenantAdminPath(slug, "sales") : tenantAdminPath(slug, "owing"),
     })),
     ...recentDrops.map((d) => ({
       id: d.id,
@@ -183,7 +203,7 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
       subtitle: `Stock drop · ${d.lines.reduce((n, l) => n + l.quantity, 0)} packs`,
       amount: 0,
       date: d.createdAt,
-      href: "/admin/shops",
+      href: tenantAdminPath(slug, "shops"),
     })),
   ]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -191,18 +211,34 @@ export async function getBusinessDashboard(): Promise<BusinessDashboard> {
 
   const needsAttention: BusinessDashboard["needsAttention"] = [];
   if (pendingOrders > 0) {
-    needsAttention.push({ label: "New orders to process", href: "/admin/orders?filter=new", count: pendingOrders });
+    needsAttention.push({
+      label: "New orders to process",
+      href: tenantAdminPath(slug, "orders?filter=new"),
+      count: pendingOrders,
+    });
   }
   if (owingCustomerCount > 0) {
-    needsAttention.push({ label: "Customers owing payment", href: "/admin/owing", count: owingCustomerCount });
+    needsAttention.push({
+      label: "Customers owing payment",
+      href: tenantAdminPath(slug, "owing"),
+      count: owingCustomerCount,
+    });
   }
   const outOfStock = lowStock.filter((p) => p.stock === 0).length;
   if (outOfStock > 0) {
-    needsAttention.push({ label: "Out of stock items", href: "/admin/menu", count: outOfStock });
+    needsAttention.push({
+      label: "Out of stock items",
+      href: tenantAdminPath(slug, "menu"),
+      count: outOfStock,
+    });
   }
   const lowOnly = lowStock.filter((p) => p.stock > 0).length;
   if (lowOnly > 0) {
-    needsAttention.push({ label: "Low stock items", href: "/admin/menu", count: lowOnly });
+    needsAttention.push({
+      label: "Low stock items",
+      href: tenantAdminPath(slug, "menu"),
+      count: lowOnly,
+    });
   }
 
   return {

@@ -1,15 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { businessConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: businessConfig.name,
-  description: "Fresh quality meat — bulk packs, great prices. Mobile butcher, we come to you!",
+  title: "Nexvintrix Connect",
+  description: "Order pages and owner tools for local businesses — connect with your customers.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: businessConfig.name,
+    title: "Nexvintrix Connect",
   },
   icons: {
     icon: [{ url: "/icon.svg" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }],

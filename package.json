@@ -1,6 +1,9 @@
 {
-  "name": "hethu-butcher",
-  "version": "0.1.0",
+  "name": "mobile-butcher",
+  "version": "0.2.0",
+  "description": "Mobile Butcher — multi-tenant PWA for mobile meat businesses (Nexvintrix)",
+  "author": "Nexvintrix <support@nexvintrix.co.za>",
+  "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,6 +20,7 @@
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "@supabase/supabase-js": "^2.49.8",
+    "bcryptjs": "^3.0.3",
     "iron-session": "^8.0.4",
     "next": "^15.3.3",
     "qrcode": "^1.5.4",
@@ -25,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.8",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.21",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.6",
